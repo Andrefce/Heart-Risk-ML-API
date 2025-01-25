@@ -1,12 +1,10 @@
-import os
-import pickle
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import joblib
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Enable CORS for all routes
 
 # Load the model
 model = joblib.load("rf__model.pkl")
@@ -37,8 +35,16 @@ categorical_mappings = {
     "Smoking_History": {"No": 0, "Yes": 1}
 }
 
-@app.route("/api/predict", methods=["POST"])
+@app.route("/api/predict", methods=["GET", "POST", "OPTIONS"])
 def predict():
+    if request.method == "OPTIONS":
+        # Handle preflight request
+        response = jsonify({"message": "Preflight request successful"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        response.headers.add("Access-Control-Allow-Methods", "*")
+        return response
+
     try:
         # Parse incoming JSON data
         data = request.get_json()
@@ -64,7 +70,9 @@ def predict():
         prediction = model.predict(input_df)
 
         # Return the prediction result
-        return jsonify({"prediction": prediction.tolist()})
+        response = jsonify({"prediction": prediction.tolist()})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
